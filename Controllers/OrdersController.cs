@@ -5,11 +5,14 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using InternetShop.Data;
 using InternetShop.Models;
 
 namespace InternetShop.Controllers
 {
+    [Authorize]
     public class OrdersController : Controller
     {
         private readonly ShopDbContext _context;
@@ -20,37 +23,39 @@ namespace InternetShop.Controllers
         }
 
         // GET: Orders
-        public async Task<IActionResult> Index(string sortOrder, int? customerId, OrderStatus? status, DateTime? dateFrom, DateTime? dateTo)
+        public async Task<IActionResult> Index(string sortOrder, OrderStatus? status, DateTime? dateFrom, DateTime? dateTo)
         {
             ViewBag.DateFrom = dateFrom?.ToString("yyyy-MM-dd");
             ViewBag.DateTo = dateTo?.ToString("yyyy-MM-dd");
-            ViewBag.SelectedCustomerId = customerId;
             ViewBag.SelectedStatus = status;
             ViewBag.CurrentSort = sortOrder;
             ViewBag.IdSortParm = sortOrder == "Id" ? "id_desc" : "Id";
-            ViewBag.ClientSortParm = sortOrder == "Client" ? "client_desc" : "Client";
+            ViewBag.UserSortParm = sortOrder == "User" ? "user_desc" : "User";
             ViewBag.DateSortParm = sortOrder == "Date" ? "date_desc" : "Date";
             ViewBag.StatusSortParm = sortOrder == "Status" ? "status_desc" : "Status";
             ViewBag.CountSortParm = sortOrder == "Count" ? "count_desc" : "Count";
             ViewBag.SumSortParm = sortOrder == "Sum" ? "sum_desc" : "Sum";
 
             // Для фильтра
-            ViewBag.Customers = new SelectList(_context.Customers.OrderBy(c => c.Name).ToList(), "Id", "Name", customerId);
             ViewBag.Statuses = new SelectList(Enum.GetValues(typeof(OrderStatus)).Cast<OrderStatus>().Select(s => new { Id = (int)s, Name = s.ToString().Replace("_", " ") }), "Id", "Name", status);
 
             var orders = _context.Orders
                 .Include(o => o.Items)
-                .Include(o => o.Customer)
+                .Include(o => o.User)
                 .AsQueryable();
+
+            // Если пользователь не админ, показываем только его заказы
+            if (!User.IsInRole("Admin"))
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new InvalidOperationException("User ID not found"));
+                orders = orders.Where(o => o.UserId == userId);
+            }
 
             // Для отображения названий товаров
             var productNames = _context.Products.ToDictionary(p => p.Id, p => p.Name);
             ViewBag.ProductNames = productNames;
 
-            if (customerId.HasValue)
-            {
-                orders = orders.Where(o => o.CustomerId == customerId.Value);
-            }
+            // Фильтрация по пользователю теперь происходит выше
             if (status.HasValue)
             {
                 orders = orders.Where(o => o.Status == status.Value);
@@ -78,11 +83,11 @@ namespace InternetShop.Controllers
                 case "id_desc":
                     orders = orders.OrderByDescending(o => o.Id);
                     break;
-                case "Client":
-                    orders = orders.OrderBy(o => o.Customer.Name);
+                case "User":
+                    orders = orders.OrderBy(o => o.User.LastName);
                     break;
-                case "client_desc":
-                    orders = orders.OrderByDescending(o => o.Customer.Name);
+                case "user_desc":
+                    orders = orders.OrderByDescending(o => o.User.LastName);
                     break;
                 case "Date":
                     orders = orders.OrderBy(o => o.OrderDate);
@@ -125,69 +130,52 @@ namespace InternetShop.Controllers
             }
 
             var order = await _context.Orders
+                .Include(o => o.Items)
+                .Include(o => o.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (order == null)
             {
                 return NotFound();
+            }
+
+            // Проверяем, принадлежит ли заказ текущему пользователю или является ли пользователь админом
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!User.IsInRole("Admin") && userId != null && order.UserId != int.Parse(userId))
+            {
+                return RedirectToAction("AccessDenied", "Account");
             }
 
             return View(order);
         }
 
         // GET: Orders/Create
+        [Authorize]
         public IActionResult Create()
         {
-            var customers = _context.Customers.ToList();
-            if (!customers.Any())
-            {
-                TempData["ErrorMessage"] = "Сначала создайте хотя бы одного клиента.";
-                return RedirectToAction("Index", "Customers");
-            }
-            var products = _context.Products.ToList();
-            var statuses = Enum.GetValues(typeof(OrderStatus)).Cast<OrderStatus>().Select(s => new SelectListItem
-            {
-                Value = ((int)s).ToString(),
-                Text = s.ToString().Replace("_", " ")
-            }).ToList();
             var model = new OrderCreateViewModel
             {
-                Customers = customers.Select(c => new SelectListItem
-                {
-                    Value = c.Id.ToString(),
-                    Text = c.Name
-                }).ToList(),
-                Products = products.Select(p => new ProductViewModel
+                Products = _context.Products.Where(p => p.Stock > 0).Select(p => new ProductViewModel
                 {
                     Id = p.Id,
                     Name = p.Name,
                     Price = p.Price,
                     Stock = p.Stock
-                }).ToList(),
-                Statuses = statuses,
-                OrderDate = DateTime.Now
+                }).ToList()
             };
             return View(model);
         }
 
         // POST: Orders/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(OrderCreateViewModel model)
         {
             // Удаляем ошибки ModelState для технических полей, которые не должны валидироваться
             ModelState.Remove("Products");
-            ModelState.Remove("Statuses");
-            ModelState.Remove("Customers");
 
             if (!ModelState.IsValid)
             {
-                model.Customers = _context.Customers.Select(c => new SelectListItem
-                {
-                    Value = c.Id.ToString(),
-                    Text = c.Name
-                }).ToList();
                 model.Products = _context.Products.Select(p => new ProductViewModel
                 {
                     Id = p.Id,
@@ -195,20 +183,15 @@ namespace InternetShop.Controllers
                     Price = p.Price,
                     Stock = p.Stock
                 }).ToList();
-                model.Statuses = Enum.GetValues(typeof(OrderStatus)).Cast<OrderStatus>().Select(s => new SelectListItem
-                {
-                    Value = ((int)s).ToString(),
-                    Text = s.ToString().Replace("_", " ")
-                }).ToList();
                 return View(model);
             }
 
             var order = new Order
             {
-                CustomerId = model.CustomerId,
-                OrderDate = DateTime.SpecifyKind(model.OrderDate, DateTimeKind.Utc),
-                Status = model.Status,
-                Items = new List<OrderItem>()
+                OrderDate = DateTime.UtcNow,
+                Status = OrderStatus.Новый,
+                Items = new List<OrderItem>(),
+                UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new InvalidOperationException("User ID not found"))
             };
 
             if (model.SelectedProducts != null)
@@ -250,14 +233,22 @@ namespace InternetShop.Controllers
         }
 
         // GET: Orders/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Edit(int? id, string sortOrder = null, OrderStatus? status = null, DateTime? dateFrom = null, DateTime? dateTo = null)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var order = await _context.Orders.FindAsync(id);
+            ViewBag.CurrentSort = sortOrder;
+            ViewBag.SelectedStatus = status;
+            ViewBag.DateFrom = dateFrom?.ToString("yyyy-MM-dd");
+            ViewBag.DateTo = dateTo?.ToString("yyyy-MM-dd");
+
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(m => m.Id == id);
             if (order == null)
             {
                 return NotFound();
@@ -266,24 +257,42 @@ namespace InternetShop.Controllers
         }
 
         // POST: Orders/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,CustomerId,OrderDate,Status")] Order order)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,UserId,OrderDate,Status")] Order order, string sortOrder = null, OrderStatus? status = null, DateTime? dateFrom = null, DateTime? dateTo = null)
         {
             if (id != order.Id)
             {
                 return NotFound();
             }
 
+            // Сохраняем параметры фильтрации в ViewBag
+            ViewBag.CurrentSort = sortOrder;
+            ViewBag.SelectedStatus = status;
+            ViewBag.DateFrom = dateFrom?.ToString("yyyy-MM-dd");
+            ViewBag.DateTo = dateTo?.ToString("yyyy-MM-dd");
+
             if (ModelState.IsValid)
             {
                 try
                 {
-                    order.OrderDate = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc);
-                    _context.Update(order);
+                    var existingOrder = await _context.Orders
+                        .Include(o => o.User)
+                        .Include(o => o.Items)
+                        .FirstOrDefaultAsync(o => o.Id == id);
+
+                    if (existingOrder == null)
+                    {
+                        return NotFound();
+                    }
+
+                    existingOrder.Status = order.Status;
+                    existingOrder.OrderDate = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc);
+                    _context.Entry(existingOrder).State = EntityState.Modified;
+
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index), new { sortOrder, status, dateFrom, dateTo });
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -291,19 +300,26 @@ namespace InternetShop.Controllers
                     {
                         return NotFound();
                     }
-                    else
-                    {
-                        throw;
-                    }
+                    throw;
                 }
-                return RedirectToAction(nameof(Index));
             }
-            // Добавляем ошибки ModelState во ViewBag для диагностики
-            ViewBag.ModelStateErrors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-            return View(order);
+
+            // Загружаем данные заказа для отображения
+            var orderToDisplay = await _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (orderToDisplay == null)
+            {
+                return NotFound();
+            }
+
+            return View(orderToDisplay);
         }
 
         // GET: Orders/Delete/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -312,6 +328,7 @@ namespace InternetShop.Controllers
             }
 
             var order = await _context.Orders
+                .Include(o => o.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (order == null)
             {
@@ -324,6 +341,7 @@ namespace InternetShop.Controllers
         // POST: Orders/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var order = await _context.Orders.FindAsync(id);

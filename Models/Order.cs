@@ -15,7 +15,7 @@ namespace InternetShop.Models
     public class Order
     {
         public int Id { get; set; }
-        public int CustomerId { get; set; }
+        public int UserId { get; set; } // Пользователь, сделавший заказ
         public DateTime OrderDate { get; set; }
         public OrderStatus Status { get; set; }
 
@@ -23,6 +23,6 @@ namespace InternetShop.Models
         public List<OrderItem> Items { get; set; }
 
         [ValidateNever]
-        public Customer Customer { get; set; }
+        public User User { get; set; }
     }
 }

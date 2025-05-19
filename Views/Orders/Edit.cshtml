@@ -4,12 +4,17 @@
     ViewData["Title"] = "Редактирование";
 }
 
-<h1>Редактирование</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0"><i class="bi bi-pencil-square text-primary"></i> Редактирование заказа</h1>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> К списку
+        </a>
+    </div>
+</div>
 
-<h4>Заказ</h4>
-<hr />
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-6">
         @if (ViewBag.ModelStateErrors != null && ViewBag.ModelStateErrors.Count > 0)
         {
             <div class="alert alert-danger">
@@ -24,30 +29,35 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
+            <input type="hidden" name="sortOrder" value="@ViewBag.CurrentSort" />
+            <input type="hidden" name="status" value="@ViewBag.SelectedStatus" />
+            <input type="hidden" name="dateFrom" value="@ViewBag.DateFrom" />
+            <input type="hidden" name="dateTo" value="@ViewBag.DateTo" />
             <div class="form-group">
-                <label asp-for="CustomerId" class="control-label"></label>
-                <input asp-for="CustomerId" class="form-control" />
-                <span asp-validation-for="CustomerId" class="text-danger"></span>
+                <label class="control-label">Пользователь</label>
+                <input type="text" value="@Model.User.LastName @Model.User.FirstName @Model.User.Patronymic" class="form-control" readonly />
+                <input type="hidden" asp-for="UserId" />
             </div>
             <div class="form-group">
                 <label asp-for="OrderDate" class="control-label"></label>
                 <input asp-for="OrderDate" class="form-control" />
                 <span asp-validation-for="OrderDate" class="text-danger"></span>
             </div>
-            <div class="form-group">
-    <label asp-for="Status" class="control-label"></label>
-    <select asp-for="Status" class="form-control" asp-items="Html.GetEnumSelectList<InternetShop.Models.OrderStatus>()"></select>
+            <div class="form-group mb-3">
+    <label asp-for="Status" class="form-label">Статус</label>
+    <select asp-for="Status" class="form-select" asp-items="@(Html.GetEnumSelectList<InternetShop.Models.OrderStatus>().Select(x => new SelectListItem(x.Text.Replace("_", " "), x.Value, x.Selected)))"></select>
     <span asp-validation-for="Status" class="text-danger"></span>
 </div>
-            <div class="form-group">
-                <input type="submit" value="Сохранить" class="btn btn-primary" />
+            <div class="form-group mt-4">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-check-lg"></i> Сохранить
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-x"></i> Отмена
+                </a>
             </div>
         </form>
     </div>
-</div>
-
-<div>
-    <a asp-action="Index">Назад к списку</a>
 </div>
 
 @section Scripts {

@@ -1,15 +1,10 @@
 @model InternetShop.Models.OrderCreateViewModel
 
 @{
-    ViewData["Title"] = "Создание";
+    ViewData["Title"] = "Создание заказа";
 }
 
 <h1>Создание заказа</h1>
-
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
-}
 
 @if (!ViewData.ModelState.IsValid)
 {
@@ -17,10 +12,13 @@
         <ul>
         @foreach (var key in ViewData.ModelState.Keys)
         {
-            var errors = ViewData.ModelState[key].Errors;
-            foreach (var error in errors)
+            var modelState = ViewData.ModelState[key];
+            if (modelState?.Errors != null)
             {
-                <li>@error.ErrorMessage (@key)</li>
+                foreach (var error in modelState.Errors)
+                {
+                    <li>@error.ErrorMessage</li>
+                }
             }
         }
         </ul>
@@ -29,31 +27,13 @@
 
 <hr />
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-12">
         <form asp-action="Create" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group mb-2">
-                <label asp-for="CustomerId" class="control-label"></label>
-                <select asp-for="CustomerId" class="form-control" asp-items="Model.Customers">
-                    <option value="">-- Выберите клиента --</option>
-                </select>
-                <span asp-validation-for="CustomerId" class="text-danger"></span>
-            </div>
-            <div class="form-group mb-2">
-                <label asp-for="OrderDate" class="control-label"></label>
-                <input asp-for="OrderDate" class="form-control" />
-                <span asp-validation-for="OrderDate" class="text-danger"></span>
-            </div>
-            <div class="form-group mb-2">
-                <label asp-for="Status" class="control-label"></label>
-                <select asp-for="Status" class="form-control" asp-items="Model.Statuses">
-                    <option value="">-- Выберите статус --</option>
-                </select>
-                <span asp-validation-for="Status" class="text-danger"></span>
-            </div>
-            <div class="form-group mb-3">
-                <label>Товары</label>
-                <table class="table table-bordered table-sm">
+            
+            <div class="form-group mb-4">
+                <h5>Выберите товары для заказа</h5>
+                <table class="table table-striped">
                     <thead>
                         <tr>
                             <th>Название</th>
@@ -63,23 +43,24 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (int i = 0; i < Model.Products.Count; i++)
+                        @for (var i = 0; i < Model.Products.Count; i++)
                         {
                             <tr>
                                 <td>@Model.Products[i].Name</td>
                                 <td>@Model.Products[i].Price.ToString("C")</td>
                                 <td>@Model.Products[i].Stock</td>
-                                <td>
+                                <td style="width: 150px;">
                                     <input type="hidden" name="SelectedProducts[@i].ProductId" value="@Model.Products[i].Id" />
-                                    <input type="number" name="SelectedProducts[@i].Quantity" value="0" min="0" max="@Model.Products[i].Stock" class="form-control" style="width: 80px;" />
+                                    <input type="number" name="SelectedProducts[@i].Quantity" value="0" min="0" max="@Model.Products[i].Stock" class="form-control" />
                                 </td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
+
             <div class="form-group">
-                <input type="submit" value="Создать заказ" class="btn btn-primary" />
+                <button type="submit" class="btn btn-primary">Создать заказ</button>
                 <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
             </div>
         </form>

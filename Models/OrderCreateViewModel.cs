@@ -7,15 +7,6 @@ namespace InternetShop.Models
 {
     public class OrderCreateViewModel
     {
-        public int CustomerId { get; set; }
-        public DateTime OrderDate { get; set; }
-        public OrderStatus Status { get; set; }
-        [BindNever]
-        public List<SelectListItem> Statuses { get; set; }
-
-        [BindNever]
-        public List<SelectListItem> Customers { get; set; }
-
         [BindNever]
         public List<ProductViewModel> Products { get; set; }
 
