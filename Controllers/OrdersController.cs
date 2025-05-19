@@ -66,6 +66,12 @@ namespace InternetShop.Controllers
                 var productNames = _context.Products.ToDictionary(p => p.Id, p => p.Name);
                 ViewBag.ProductNames = productNames;
 
+                if (customerId.HasValue)
+                {
+                    orders = orders.Where(o => o.UserId == customerId.Value);
+                    _logger.LogInformation("Filtering by user {UserId}", customerId.Value);
+                }
+
                 if (status.HasValue)
                 {
                     orders = orders.Where(o => o.Status == status.Value);

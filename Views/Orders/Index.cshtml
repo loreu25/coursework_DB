@@ -6,9 +6,12 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="mb-0"><i class="bi bi-bag-check-fill text-warning"></i> Заказы</h1>
-    <a asp-action="Create" class="btn btn-success btn-lg">
-        <i class="bi bi-plus-circle"></i> Новый заказ
-    </a>
+    @if (!User.IsInRole("Admin"))
+    {
+        <a asp-action="Create" class="btn btn-success btn-lg">
+            <i class="bi bi-plus-circle"></i> Новый заказ
+        </a>
+    }
 </div>
 
 <form method="get" asp-action="Index" class="mb-3 d-flex flex-wrap gap-2 align-items-end">
@@ -22,10 +25,16 @@
     </div>
 
     <div>
+        <label for="customerId" class="form-label mb-0">Пользователь:</label>
+        <select id="customerId" name="customerId" class="form-select" asp-items="ViewBag.Users">
+            <option value="">Все</option>
+        </select>
+    </div>
+    <div>
         <label for="status" class="form-label mb-0">Статус:</label>
         <select id="status" name="status" class="form-select" asp-items="ViewBag.Statuses">
-    <option value="">Все</option>
-</select>
+            <option value="">Все</option>
+        </select>
     </div>
     <div>
         <button type="submit" class="btn btn-primary">Фильтровать</button>
@@ -37,37 +46,37 @@
         <thead class="table-light">
             <tr>
                 <th>
-    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.IdSortParm)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Номер
+    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.IdSortParm)" asp-route-customerId="@(ViewBag.SelectedCustomerId)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Номер
         @if ((ViewBag.CurrentSort as string) == "Id") { <span>▲</span> }
         @if ((ViewBag.CurrentSort as string) == "id_desc") { <span>▼</span> }
     </a>
 </th>
 <th>
-    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.UserSortParm)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Пользователь
+    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.UserSortParm)" asp-route-customerId="@(ViewBag.SelectedCustomerId)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Пользователь
         @if ((ViewBag.CurrentSort as string) == "User") { <span>▲</span> }
         @if ((ViewBag.CurrentSort as string) == "user_desc") { <span>▼</span> }
     </a>
 </th>
 <th>
-    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.DateSortParm)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Дата заказа
+    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.DateSortParm)" asp-route-customerId="@(ViewBag.SelectedCustomerId)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Дата заказа
         @if ((ViewBag.CurrentSort as string) == "Date") { <span>▲</span> }
         @if ((ViewBag.CurrentSort as string) == "date_desc") { <span>▼</span> }
     </a>
 </th>
 <th>
-    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.StatusSortParm)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Статус
+    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.StatusSortParm)" asp-route-customerId="@(ViewBag.SelectedCustomerId)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Статус
         @if ((ViewBag.CurrentSort as string) == "Status") { <span>▲</span> }
         @if ((ViewBag.CurrentSort as string) == "status_desc") { <span>▼</span> }
     </a>
 </th>
 <th>
-    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.CountSortParm)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Товаров
+    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.CountSortParm)" asp-route-customerId="@(ViewBag.SelectedCustomerId)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Товаров
         @if ((ViewBag.CurrentSort as string) == "Count") { <span>▲</span> }
         @if ((ViewBag.CurrentSort as string) == "count_desc") { <span>▼</span> }
     </a>
 </th>
 <th>
-    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.SumSortParm)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Сумма
+    <a asp-action="Index" asp-route-sortOrder="@(ViewBag.SumSortParm)" asp-route-customerId="@(ViewBag.SelectedCustomerId)" asp-route-status="@(ViewBag.SelectedStatus)" asp-route-dateFrom="@(ViewBag.DateFrom)" asp-route-dateTo="@(ViewBag.DateTo)">Сумма
         @if ((ViewBag.CurrentSort as string) == "Sum") { <span>▲</span> }
         @if ((ViewBag.CurrentSort as string) == "sum_desc") { <span>▼</span> }
     </a>
