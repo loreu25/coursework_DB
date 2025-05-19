@@ -1,22 +1,29 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace InternetShop.Models
 {
     public enum OrderStatus
     {
-        Новый = 0,
-        В_обработке = 1,
-        Завершён = 2,
-        Отменён = 3
+        New = 0,
+        Processing = 1,
+        Completed = 2,
+        Cancelled = 3
     }
 
     public class Order
     {
         public int Id { get; set; }
-        public int UserId { get; set; } // Пользователь, сделавший заказ
+
+        [Required]
+        public int UserId { get; set; }
+
+        [Required]
         public DateTime OrderDate { get; set; }
+
+        [Required]
         public OrderStatus Status { get; set; }
 
         [ValidateNever]

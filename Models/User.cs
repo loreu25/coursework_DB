@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace InternetShop.Models
 {
@@ -7,30 +8,35 @@ namespace InternetShop.Models
     {
         public int Id { get; set; }
 
-        [Required]
-        [MaxLength(50)]
-        public string LastName { get; set; } // Фамилия
+        [Required(ErrorMessage = "Фамилия обязательна для заполнения")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "Фамилия должна быть от 2 до 50 символов")]
+        [RegularExpression(@"^[A-Za-zА-Яа-я\-]+$", ErrorMessage = "Фамилия может содержать только буквы и дефис")]
+        public string LastName { get; set; }
 
-        [Required]
-        [MaxLength(50)]
-        public string FirstName { get; set; } // Имя
+        [Required(ErrorMessage = "Имя обязательно для заполнения")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "Имя должно быть от 2 до 50 символов")]
+        [RegularExpression(@"^[A-Za-zА-Яа-я\-]+$", ErrorMessage = "Имя может содержать только буквы и дефис")]
+        public string FirstName { get; set; }
 
-        [Required]
-        [MaxLength(50)]
-        public string Patronymic { get; set; } // Отчество
+        [Required(ErrorMessage = "Отчество обязательно для заполнения")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "Отчество должно быть от 2 до 50 символов")]
+        [RegularExpression(@"^[A-Za-zА-Яа-я\-]+$", ErrorMessage = "Отчество может содержать только буквы и дефис")]
+        public string Patronymic { get; set; }
 
-        [Required]
-        [EmailAddress]
-        [MaxLength(100)]
-        public string Email { get; set; } // Логин и email
+        [Required(ErrorMessage = "Email обязателен для заполнения")]
+        [EmailAddress(ErrorMessage = "Неверный формат email")]
+        [StringLength(100, ErrorMessage = "Email не может быть длиннее 100 символов")]
+        public string Email { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Пароль обязателен для заполнения")]
         public string PasswordHash { get; set; }
 
-        [Required]
-        [MaxLength(20)]
-        public string Role { get; set; } // "Admin" или "User"
+        [Required(ErrorMessage = "Роль обязательна для заполнения")]
+        [StringLength(20, ErrorMessage = "Роль не может быть длиннее 20 символов")]
+        [RegularExpression("^(Admin|User)$", ErrorMessage = "Роль может быть только 'Admin' или 'User'")]
+        public string Role { get; set; }
 
+        [ValidateNever]
         public virtual ICollection<Order> Orders { get; set; }
     }
 }
