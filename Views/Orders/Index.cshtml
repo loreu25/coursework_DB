@@ -87,14 +87,17 @@
                         @{
     var productNames = ViewBag.ProductNames as Dictionary<int, string>;
 }
-@if (order.Items != null)
+@if (order.Items != null && order.Items.Any())
 {
+    var itemTexts = new List<string>();
     foreach (var item in order.Items)
     {
-        string productName = productNames != null && productNames.ContainsKey(item.ProductId) ? productNames[item.ProductId] : $"ID:{item.ProductId}";
-        <span>@productName ×@item.Quantity</span>@(item != order.Items.Last() ? ", " : "")
+        var productName = productNames != null && productNames.ContainsKey(item.ProductId) 
+            ? productNames[item.ProductId] 
+            : $"ID:{item.ProductId}";
+        itemTexts.Add($"{productName} ×{item.Quantity}");
     }
-}
+    <text>@Html.Raw(string.Join(", ", itemTexts))</text>
 }
                     </td>
                     <td>@((order.Items != null && order.Items.Count > 0) ? (order.Items.Sum(i => i.Price * i.Quantity).ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("ru-RU"))) : "0 ₽")</td>

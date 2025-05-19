@@ -39,7 +39,7 @@ namespace InternetShop.Controllers
                 ViewBag.SelectedStatus = status;
                 ViewBag.CurrentSort = sortOrder;
                 ViewBag.IdSortParm = sortOrder == "Id" ? "id_desc" : "Id";
-                ViewBag.ClientSortParm = sortOrder == "Client" ? "client_desc" : "Client";
+                ViewBag.UserSortParm = sortOrder == "User" ? "user_desc" : "User";
                 ViewBag.DateSortParm = sortOrder == "Date" ? "date_desc" : "Date";
                 ViewBag.StatusSortParm = sortOrder == "Status" ? "status_desc" : "Status";
                 ViewBag.CountSortParm = sortOrder == "Count" ? "count_desc" : "Count";
@@ -96,10 +96,10 @@ namespace InternetShop.Controllers
                     case "id_desc":
                         orders = orders.OrderByDescending(o => o.Id);
                         break;
-                    case "Client":
+                    case "User":
                         orders = orders.OrderBy(o => o.User.LastName);
                         break;
-                    case "client_desc":
+                    case "user_desc":
                         orders = orders.OrderByDescending(o => o.User.LastName);
                         break;
                     case "Date":

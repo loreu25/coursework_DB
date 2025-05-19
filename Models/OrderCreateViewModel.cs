@@ -37,7 +37,7 @@ namespace InternetShop.Models
         public int ProductId { get; set; }
 
         [Required(ErrorMessage = "Укажите количество")]
-        [Range(1, int.MaxValue, ErrorMessage = "Количество должно быть больше 0")]
+        [Range(0, int.MaxValue, ErrorMessage = "Количество не может быть отрицательным")]
         public int Quantity { get; set; }
     }
 }
