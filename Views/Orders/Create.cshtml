@@ -1,0 +1,91 @@
+@model InternetShop.Models.OrderCreateViewModel
+
+@{
+    ViewData["Title"] = "Создание";
+}
+
+<h1>Создание заказа</h1>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        <ul>
+        @foreach (var key in ViewData.ModelState.Keys)
+        {
+            var errors = ViewData.ModelState[key].Errors;
+            foreach (var error in errors)
+            {
+                <li>@error.ErrorMessage (@key)</li>
+            }
+        }
+        </ul>
+    </div>
+}
+
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group mb-2">
+                <label asp-for="CustomerId" class="control-label"></label>
+                <select asp-for="CustomerId" class="form-control" asp-items="Model.Customers">
+                    <option value="">-- Выберите клиента --</option>
+                </select>
+                <span asp-validation-for="CustomerId" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-2">
+                <label asp-for="OrderDate" class="control-label"></label>
+                <input asp-for="OrderDate" class="form-control" />
+                <span asp-validation-for="OrderDate" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-2">
+                <label asp-for="Status" class="control-label"></label>
+                <select asp-for="Status" class="form-control" asp-items="Model.Statuses">
+                    <option value="">-- Выберите статус --</option>
+                </select>
+                <span asp-validation-for="Status" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label>Товары</label>
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Цена</th>
+                            <th>В наличии</th>
+                            <th>Количество</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.Products.Count; i++)
+                        {
+                            <tr>
+                                <td>@Model.Products[i].Name</td>
+                                <td>@Model.Products[i].Price.ToString("C")</td>
+                                <td>@Model.Products[i].Stock</td>
+                                <td>
+                                    <input type="hidden" name="SelectedProducts[@i].ProductId" value="@Model.Products[i].Id" />
+                                    <input type="number" name="SelectedProducts[@i].Quantity" value="0" min="0" max="@Model.Products[i].Stock" class="form-control" style="width: 80px;" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Создать заказ" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
